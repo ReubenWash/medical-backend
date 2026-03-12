@@ -10,7 +10,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1',  'medical-backend234567.onrender.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'medical-backend234567.onrender.com']
 
 DATABASES = {
     'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
@@ -86,21 +86,15 @@ STATIC_URL  = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# ── Media / File Storage (Cloudinary) ─────────────────────────────────────────
-# Render's filesystem is ephemeral — uploaded files vanish on redeploy.
-# Cloudinary gives persistent cloud storage for doctor photos, patient pics, etc.
-# Set CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name> in Render env vars.
-# Falls back to local media storage in development when CLOUDINARY_URL is not set.
-
+# Media / File Storage (Cloudinary)
 CLOUDINARY_URL = config('CLOUDINARY_URL', default='')
 
 if CLOUDINARY_URL:
     import cloudinary
     cloudinary.config(cloudinary_url=CLOUDINARY_URL)
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    MEDIA_URL = '/media/'   # not really used with Cloudinary but keeps DRF happy
+    MEDIA_URL = '/media/'
 else:
-    # Local development — serve from /media/
     MEDIA_URL  = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -125,15 +119,19 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME':  timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    # Rotating refresh tokens means each /token/refresh/ call issues a NEW refresh
-    # token and blacklists the old one — this stops token reuse after logout.
     'ROTATE_REFRESH_TOKENS':    True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'UPDATE_LAST_LOGIN': True,
 }
 
-CORS_ALLOWED_ORIGINS = [
+# CORS
+# On Render set CORS_ALLOWED_ORIGINS as comma-separated URLs:
+# https://medical-frontend-site.vercel.app,https://medical-admin-site.vercel.app
+_cors_env = config('CORS_ALLOWED_ORIGINS', default='')
+_cors_from_env = [origin.strip() for origin in _cors_env.split(',') if origin.strip()]
+
+CORS_ALLOWED_ORIGINS = _cors_from_env or [
     'http://localhost:5174',
     'http://localhost:5173',
     'http://localhost:3000',
@@ -145,9 +143,7 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
-# ── Email ─────────────────────────────────────────────────────────────────────
-# Dev: console backend prints emails to terminal.
-# Prod: set EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend in env.
+# Email
 EMAIL_BACKEND       = config('EMAIL_BACKEND',       default='django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST          = config('EMAIL_HOST',          default='smtp.gmail.com')
 EMAIL_PORT          = config('EMAIL_PORT',          default=587, cast=int)
@@ -158,4 +154,4 @@ DEFAULT_FROM_EMAIL  = config('DEFAULT_FROM_EMAIL',  default='MediCare Clinic <no
 
 # Frontend URL used in password-reset / verification emails
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
-PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
+PASSWORD_RESET_TIMEOUT = 3600
