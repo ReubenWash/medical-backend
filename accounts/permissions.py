@@ -20,7 +20,8 @@ class IsOwnerOrAdmin(BasePermission):
 
 
 class IsAdminOrReadOnly(BasePermission):
+    """Anyone can read (GET/HEAD/OPTIONS). Only admins can write."""
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
-            return request.user and request.user.is_authenticated
-        return request.user and request.user.is_authenticated and request.user.role == 'admin'
+            return True  # Public read access — no login required
+        return bool(request.user and request.user.is_authenticated and request.user.role == 'admin')
